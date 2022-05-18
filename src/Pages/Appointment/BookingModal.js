@@ -2,8 +2,9 @@ import React from "react";
 import { format } from "date-fns";
 import { useAuthState } from "react-firebase-hooks/auth";
 import auth from "../../firebase.init";
+import { toast } from 'react-toastify';
 
-const BookingModal = ({ treatment, date, setTreatment }) => {
+const BookingModal = ({ treatment, date, setTreatment, refetch }) => {
   const { _id, name, slots } = treatment;
 
   const [user] = useAuthState(auth);
@@ -16,17 +17,37 @@ const BookingModal = ({ treatment, date, setTreatment }) => {
 
       const booking = {
         treatmentId: _id,
-        treatment: name,
-        date: formattedDate,
-        slot: slot,
-        email: user.email,
-        patientName: user.displayName,
-        phone: event.target.phone.value,
+            treatment: name,
+            date: formattedDate,
+            slot,
+            patient: user.email,
+            patientName: user.displayName,
+            phone: event.target.phone.value
       }
 
-      // to close the modal
-      setTreatment(null);
-  }
+      fetch('https://glacial-earth-62187.herokuapp.com/booking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(booking)
+          })
+          .then(res => res.json())
+          .then(data => {
+            if(data.success) {
+              toast.success(`Appointment is set, ${formattedDate} at ${slot}`);
+            }
+            else {
+              toast.error(`Already have an Appointment, ${data.booking?.date} at ${data.booking?.slot}`);
+            }
+                        
+            refetch();
+            setTreatment(null);
+            })            
+            
+            
+          }
+  
 
   return (
     <div>

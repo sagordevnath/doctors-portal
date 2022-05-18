@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useCreateUserWithEmailAndPassword, useSignInWithGoogle, useUpdateProfile } from 'react-firebase-hooks/auth';
 import auth from '../../firebase.init';
 import { useForm } from "react-hook-form";
 import Loading from '../Shared/Loading';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import useToken from '../../Hooks/useToken';
 
 const SignUp = () => {
     const [signInWithGoogle, gUser, gLoading, gError] = useSignInWithGoogle(auth);
@@ -13,27 +14,26 @@ const SignUp = () => {
         user,
         loading,
         error,
-      ] = useCreateUserWithEmailAndPassword(auth);
+    ] = useCreateUserWithEmailAndPassword(auth);
 
-      const [updateProfile, updating, updateError] = useUpdateProfile(auth);            
+    const [updateProfile, updating, updateError] = useUpdateProfile(auth);
 
-    let signUpError;
+    const [token]  = useToken(user || gUser);
+
     const navigate = useNavigate();
-    const location = useLocation();
-    let from = location.state?.from?.pathname || "/";
 
-    useEffect( () =>{
-        if (user || gUser) {
-            navigate(from, { replace: true });
-        }
-    }, [user, gUser, from, navigate])
+    let signInError;
 
     if (loading || gLoading || updating) {
         return <Loading></Loading>
     }
 
-    if(error || gError){
-        signUpError= <p className='text-red-500'><small>{error?.message || gError?.message || updateError?.message }</small></p>
+    if (error || gError || updateError) {
+        signInError = <p className='text-red-500'><small>{error?.message || gError?.message || updateError?.message}</small></p>
+    }
+
+    if (token) {
+        navigate('/appointment');
     }
 
     const onSubmit = async data => {
@@ -119,7 +119,7 @@ const SignUp = () => {
                             </label>
                         </div>
 
-                        {signUpError}
+                        {signInError}
                         <input className='btn w-full max-w-xs text-white' type="submit" value="Sign Up" />
                     </form>
                     <p><small>Already have an account? <Link className='text-primary' to="/login">Please Login</Link></small></p>
